@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>React Contact Form Example</title>
+    <!-- The core React library -->
+    <script src="https://fb.me/react-0.13.3.js"></script>
+<!-- In-browser JSX transformer, remove when pre-compiling JSX. -->
+    <script src="https://fb.me/JSXTransformer-0.13.3.js"></script>
+    <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">
+    <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap-theme.min.css">
+  </head>
+  <body>
+    <div class="container">
+      <div class="page-header">
+        <h1><a href="http://facebook.github.io/react/">React</a> Contact Form Example</h1>
+        <p>An example of building a reusable contact form using <a href="http://facebook.github.io/react/docs/forms.html#uncontrolled-components">uncontrolled components</a>, extracted from a <a href="http://facebook.github.io/react/">React</a> app I'm working on.</p>
+        <p>Plain old JavaScript functions are used to remove duplication of structure and logic from the form layout.</p>
+        <p>The validation is barebones and whole-form-at-a-time for now, as I have plans for <a href="http://github.com/insin/newforms">newforms</a> in this area&hellip;</p>
+      </div>
+      <div id="contactform"></div>
+    </div>
+    <script type="text/jsx">
+    /** @jsx React.DOM */
+
+    var STATES = [
+      'AL', 'AK', 'AS', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'DC', 'FL', 'GA', 'HI',
+      'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS',
+      'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR',
+      'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'
+    ]
+
+    var Example = React.createClass({
+      getInitialState: function() {
+        return {
+          email: true
+        , question: true
+        , submitted: null
+        }
+      }
+
+    , render: function() {
+        var submitted
+        if (this.state.submitted !== null) {
+          submitted = <div className="alert alert-success">
+            <p>ContactForm data:</p>
+            <pre><code>{JSON.stringify(this.state.submitted, null, '  ')}</code></pre>
+          </div>
+        }
+
+        return <div>
+          <div className="panel panel-default">
+            <div className="panel-heading clearfix">
+              <h3 className="panel-title pull-left">Contact Form</h3>
+              <div className="pull-right">
+                <label className="checkbox-inline">
+                  <input type="checkbox"
+                    checked={this.state.email}
+                    onChange={this.handleChange.bind(this, 'email')}
+                  /> Email
+                </label>
+                <label className="checkbox-inline">
+                  <input type="checkbox"
+                    checked={this.state.question}
+                    onChange={this.handleChange.bind(this, 'question')}
+                  /> Question
+                </label>
+              </div>
+            </div>
+            <div className="panel-body">
+              <ContactForm ref="contactForm"
+                email={this.state.email}
+                question={this.state.question}
+                company={this.props.company}
+              />
+            </div>
+            <div className="panel-footer">
+              <button type="button" className="btn btn-primary btn-block" onClick={this.handleSubmit}>Submit</button>
+            </div>
+          </div>
+          {submitted}
+        </div>
+      }
+
+    , handleChange: function(field, e) {
+        var nextState = {}
+        nextState[field] = e.target.checked
+        this.setState(nextState)
+      }
+
+    , handleSubmit: function() {
+        if (this.refs.contactForm.isValid()) {
+          this.setState({submitted: this.refs.contactForm.getFormData()})
+        }
+      }
+    })
+
+    /**
+     * A contact form with certain optional fields.
+     */
+    var ContactForm = React.createClass({
+      getDefaultProps: function() {
+        return {
+          email: true
+        , question: false
+        }
+      }
+
+    , getInitialState: function() {
+        return {errors: {}}
+      }
+
+    , isValid: function() {
+        var fields = ['firstName', 'lastName', 'phoneNumber', 'address', 'city', 'state', 'zipCode']
+        if (this.props.email) fields.push('email')
+        if (this.props.question) fields.push('question')
+
+        var errors = {}
+        fields.forEach(function(field) {
+          var value = trim(this.refs[field].getDOMNode().value)
+          if (!value) {
+            errors[field] = 'This field is required'
+          }
+        }.bind(this))
+        this.setState({errors: errors})
+
+        var isValid = true
+        for (var error in errors) {
+          isValid = false
+          break
+        }
+        return isValid
+      }
+
+    , getFormData: function() {
+        var data = {
+          firstName: this.refs.firstName.getDOMNode().value
+        , lastName: this.refs.lastName.getDOMNode().value
+        , phoneNumber: this.refs.phoneNumber.getDOMNode().value
+        , address: this.refs.address.getDOMNode().value
+        , city: this.refs.city.getDOMNode().value
+        , state: this.refs.state.getDOMNode().value
+        , zipCode: this.refs.zipCode.getDOMNode().value
+        , currentCustomer: this.refs.currentCustomerYes.getDOMNode().checked
+        }
+        if (this.props.email) data.email = this.refs.email.getDOMNode().value
+        if (this.props.question) data.question = this.refs.question.getDOMNode().value
+        return data
+      }
+
+    , render: function() {
+        return <div className="form-horizontal">
+          {this.renderTextInput('firstName', 'First Name')}
+          {this.renderTextInput('lastName', 'Last Name')}
+          {this.renderTextInput('phoneNumber', 'Phone number')}
+          {this.props.email && this.renderTextInput('email', 'Email')}
+          {this.props.question && this.renderTextarea('question', 'Question')}
+          {this.renderTextInput('address', 'Address')}
+          {this.renderTextInput('city', 'City')}
+          {this.renderSelect('state', 'State', STATES)}
+          {this.renderTextInput('zipCode', 'Zip Code')}
+          {this.renderRadioInlines('currentCustomer', 'Are you currently a ' + this.props.company + ' Customer?', {
+            values: ['Yes', 'No']
+          , defaultCheckedValue: 'No'
+          })}
+        </div>
+      }
+
+    , renderTextInput: function(id, label) {
+        return this.renderField(id, label,
+          <input type="text" className="form-control" id={id} ref={id}/>
+        )
+      }
+
+    , renderTextarea: function(id, label) {
+        return this.renderField(id, label,
+          <textarea className="form-control" id={id} ref={id}/>
+        )
+      }
+
+    , renderSelect: function(id, label, values) {
+        var options = values.map(function(value) {
+          return <option value={value}>{value}</option>
+        })
+        return this.renderField(id, label,
+          <select className="form-control" id={id} ref={id}>
+            {options}
+          </select>
+        )
+      }
+
+    , renderRadioInlines: function(id, label, kwargs) {
+        var radios = kwargs.values.map(function(value) {
+          var defaultChecked = (value == kwargs.defaultCheckedValue)
+          return <label className="radio-inline">
+            <input type="radio" ref={id + value} name={id} value={value} defaultChecked={defaultChecked}/>
+            {value}
+          </label>
+        })
+        return this.renderField(id, label, radios)
+      }
+
+    , renderField: function(id, label, field) {
+        return <div className={$c('form-group', {'has-error': id in this.state.errors})}>
+          <label htmlFor={id} className="col-sm-4 control-label">{label}</label>
+          <div className="col-sm-6">
+            {field}
+          </div>
+        </div>
+      }
+    })
+
+    React.render(<Example company="FakeCo"/>, document.getElementById('contactform'))
+
+    // Utils
+
+    var trim = function() {
+      var TRIM_RE = /^\s+|\s+$/g
+      return function trim(string) {
+        return string.replace(TRIM_RE, '')
+      }
+    }()
+
+    function $c(staticClassName, conditionalClassNames) {
+      var classNames = []
+      if (typeof conditionalClassNames == 'undefined') {
+        conditionalClassNames = staticClassName
+      }
+      else {
+        classNames.push(staticClassName)
+      }
+      for (var className in conditionalClassNames) {
+        if (!!conditionalClassNames[className]) {
+          classNames.push(className)
+        }
+      }
+      return classNames.join(' ')
+    }
+
+    </script>
+    <a href="https://gist.github.com/insin/8418675"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"></a>
+  </body>
+</html>
